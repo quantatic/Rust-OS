@@ -30,14 +30,14 @@ start:
 ; Prints 'ERR: X` where X is the given error code, then hangs.
 ; Error code (in ascii) given in al
 error:
-          mov dword [0xb8000], 0x4f524f45 ; "ER"
-          mov dword [0xb8004], 0x4f3a4f52 ; "R:"
-          mov dword [0xb8008], 0x4f204f20 ; "_ "
-          mov byte  [0xb800a], al         ; "X"
+          mov dword [0xb8000], 0x4f524f45         ; "ER"
+          mov dword [0xb8004], 0x4f3a4f52         ; "R:"
+          mov dword [0xb8008], 0x4f204f20         ; "_ "
+          mov byte  [0xb800a], al                 ; "X"
           hlt
 
 check_multiboot:
-          cmp eax, MULTIBOOT_MAGIC_VAL
+          cmp eax, MULTIBOOT_MAGIC_VAL            ; eax should contain this magic value when actually started via multiboot
           jne .no_multiboot
           ret
 .no_multiboot:
@@ -158,9 +158,9 @@ stack_bottom:
 
 section .rodata
 gdt64:
-          dq        0                                              ; zero entry
+          dq        0                                                 ; zero entry
 .code:    equ       $ - gdt64
-          dq        (1 << 43) | (1 << 44) | (1 << 47) | (1 << 53)  ; code segment descriptor
+          dq        (1 << 43) | (1 << 44) | (1 << 47) | (1 << 53)     ; code segment descriptor
 .pointer:
-          dw        $ - gdt64 - 1
-          dq        gdt64
+          dw        $ - gdt64 - 1                                     ; gdt length - 1
+          dq        gdt64                                             ; gdt start address
