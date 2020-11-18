@@ -2,7 +2,7 @@ arch ?= x86_64
 kernel := build/kernel-$(arch).bin
 iso := build/os-$(arch).iso
 
-target ?= $(arch)-os
+rust_target ?= $(arch)-os
 rust_os := build/libos.a
 
 linker_script := src/arch/$(arch)/linker.ld
@@ -29,15 +29,15 @@ $(iso): $(kernel) $(grub_cfg)
 	mkdir -p build/isofiles/boot/grub
 	cp $(kernel) build/isofiles/boot/kernel.bin
 	cp $(grub_cfg) build/isofiles/boot/grub
-	grub-mkrescue -o $(iso) build/isofiles
+	grub-mkrescue -o $@ build/isofiles
 	rm -r build/isofiles
 
 $(rust_os): .FORCE
 	mkdir -p build/
-	RUST_TARGET_PATH=$(CURDIR) xargo rustc --target $(target) -- --emit link=$@
+	RUST_TARGET_PATH=$(CURDIR) xargo rustc --target $(rust_target) -- --emit link=$@
 
 $(kernel): $(rust_os) $(assembly_object_files) $(linker_script)
-	ld -n -T $(linker_script) -o $(kernel) $(assembly_object_files) $(rust_os)
+	ld -n -T $(linker_script) -o $@ $(assembly_object_files) $(rust_os)
 
 build/arch/$(arch)/%.o: src/arch/$(arch)/%.asm
 	mkdir -p $(dir $@)
