@@ -14,3 +14,4 @@ volatile = "0.2.6"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 spin = "0.7.0"
 x86_64 = "0.12.3"
+pic8259_simple = "0.2.0"

@@ -4,6 +4,7 @@
 ; 2  - long mode functionality missing
 
 MULTIBOOT_MAGIC_VAL equ       0x36D76289
+PAGE_SIZE           equ       0x1000
 
 global start
 extern long_mode_start
@@ -99,27 +100,36 @@ check_long_mode:
 
 setup_page_table:
           mov eax, p3_table
-          or eax, 0b11                  ; present + writable
+          or eax, 0b11                                      ; present + writable
           mov [p4_table], eax
 
           mov eax, p2_table
-          or eax, 0b11                  ; present + writable
+          or eax, 0b11                                      ; present + writable
           mov [p3_table], eax
 
           mov eax, p1_table
-          or eax, 0b11                  ; present + writable
+          or eax, 0b11                                      ; present + writable
           mov [p2_table], eax
 
           xor ecx, ecx
 .map_p1_table:
-          mov eax, 0x1000               ; 2 KiB pages
-          mul ecx                       ; start address of ecx-th page
-          or eax, 0b11                  ; present + writable
-          mov [p1_table + ecx * 8], eax ; actually map this page in p1
+          mov eax, PAGE_SIZE                                ; 2 KiB pages
+          mul ecx                                           ; start address of ecx-th page
+          or eax, 0b11                                      ; present + writable
+          mov [p1_table + ecx * 8], eax                     ; actually map this page in p1
           
           inc ecx
-          cmp ecx, 0x200                ; 512 entries in p1 page table
+          cmp ecx, 0x200                                    ; 512 entries in p1 page table
           jne .map_p1_table
+
+.setup_guard_page:
+          mov ecx, PAGE_SIZE                                ; 2 KiB page
+          mov eax, guard_page
+          div ecx                                           ; calculate page number of guard page
+
+          mov ebx, guard_page
+          or ebx, 0b10                                      ; writable
+          mov [p1_table + eax * 8], ebx                     ; disable present bit for guard page
 
           ret
 
@@ -145,13 +155,15 @@ enable_paging:
 section .bss
 align 4096
 p4_table:
-          resb 0x1000
+          resb PAGE_SIZE
 p3_table:
-          resb 0x1000
+          resb PAGE_SIZE
 p2_table:
-          resb 0x1000
+          resb PAGE_SIZE
 p1_table:
-          resb 0x1000
+          resb PAGE_SIZE
+guard_page:
+          resb PAGE_SIZE
 stack_top:
           resb 0x10000
 stack_bottom:

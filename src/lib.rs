@@ -4,12 +4,16 @@
 
 use core::panic::PanicInfo;
 
+mod gdt;
 mod interrupts;
 mod vga_buffer;
 
 #[no_mangle]
 pub extern "C" fn rust_main() {
     interrupts::init_idt();
+    gdt::init();
+    unsafe { interrupts::PICS.lock().initialize() };
+    x86_64::instructions::interrupts::enable();
 
     for i in 0..5 {
         println!(
@@ -22,9 +26,9 @@ pub extern "C" fn rust_main() {
 
     println!("I'm really booted up and executing rust code!");
 
-    x86_64::instructions::interrupts::int3();
-
-    loop {}
+	loop {
+		x86_64::instructions::hlt();
+	}
 }
 
 #[lang = "eh_personality"]
@@ -35,5 +39,7 @@ extern "C" fn rust_eh_personality() {}
 #[no_mangle]
 extern "C" fn panic_handler(info: &PanicInfo) -> ! {
     println!("{}", info);
-    loop {}
+	loop {
+		x86_64::instructions::hlt();
+	}
 }
