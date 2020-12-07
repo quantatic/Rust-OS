@@ -153,7 +153,7 @@ p2_table:
 p1_table:
           resb 0x1000
 stack_top:
-          resb 0x100
+          resb 0x10000
 stack_bottom:
 
 section .rodata
