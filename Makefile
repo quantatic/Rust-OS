@@ -17,7 +17,7 @@ assembly_object_files := $(patsubst src/arch/$(arch)/%.asm, \
 all: $(kernel)
 
 clean:
-	rm -r build
+	rm -rf build
 	xargo clean
 
 run: $(iso)

@@ -10,25 +10,30 @@ mod vga_buffer;
 
 #[no_mangle]
 pub extern "C" fn rust_main() {
+    init();
+
+    use x86_64::registers::control::Cr3;
+
+    let (level_4_page_table, _) = Cr3::read();
+    println!(
+        "Level 4 page table at: {:?}",
+        level_4_page_table.start_address()
+    );
+
+    hlt_loop();
+}
+
+fn init() {
     interrupts::init_idt();
     gdt::init();
     unsafe { interrupts::PICS.lock().initialize() };
     x86_64::instructions::interrupts::enable();
+}
 
-    for i in 0..5 {
-        println!(
-            "i = {}, i * i = {}, i / 7.0 = {}",
-            i,
-            i * i,
-            (i as f64) / 7.0
-        );
+fn hlt_loop() -> ! {
+    loop {
+        x86_64::instructions::hlt();
     }
-
-    println!("I'm really booted up and executing rust code!");
-
-	loop {
-		x86_64::instructions::hlt();
-	}
 }
 
 #[lang = "eh_personality"]
@@ -39,7 +44,5 @@ extern "C" fn rust_eh_personality() {}
 #[no_mangle]
 extern "C" fn panic_handler(info: &PanicInfo) -> ! {
     println!("{}", info);
-	loop {
-		x86_64::instructions::hlt();
-	}
+    hlt_loop()
 }
