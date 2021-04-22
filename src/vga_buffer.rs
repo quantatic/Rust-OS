@@ -2,13 +2,12 @@ use core::fmt;
 
 use lazy_static::lazy_static;
 use spin::Mutex;
-use volatile::Volatile;
 
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
         color_code: ColorCode::new(Color::LightGreen, Color::Black),
-        chars: unsafe { &mut *(0xb8000 as *mut _) },
+        frame_buffer: unsafe { &mut *(0xb8000 as *mut _) },
     });
 }
 
@@ -54,10 +53,12 @@ const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
 pub struct Writer {
-    chars: &'static mut [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
+    frame_buffer: *mut ScreenChar,
     column_position: usize,
     color_code: ColorCode,
 }
+
+unsafe impl Send for Writer {}
 
 impl Writer {
     pub fn write_byte(&mut self, byte: u8) {
@@ -68,10 +69,14 @@ impl Writer {
                 let col = self.column_position;
 
                 let color_code = self.color_code;
-                self.chars[row][col].write(ScreenChar {
-                    ascii_character: byte,
-                    color_code,
-                });
+                self.write_character(
+                    col,
+                    row,
+                    ScreenChar {
+                        ascii_character: byte,
+                        color_code,
+                    },
+                );
 
                 self.column_position += 1;
 
@@ -94,8 +99,8 @@ impl Writer {
     fn new_line(&mut self) {
         for row in 1..BUFFER_HEIGHT {
             for col in 0..BUFFER_WIDTH {
-                let c = self.chars[row][col].read();
-                self.chars[row - 1][col].write(c);
+                let c = self.read_character(col, row);
+                self.write_character(col, row - 1, c);
             }
         }
 
@@ -110,8 +115,22 @@ impl Writer {
         };
 
         for col in 0..BUFFER_WIDTH {
-            self.chars[row][col].write(blank);
+            self.write_character(col, row, blank);
         }
+    }
+
+    fn write_character(&mut self, x: usize, y: usize, screen_character: ScreenChar) {
+        let offset = x + (y * BUFFER_WIDTH);
+        unsafe {
+            self.frame_buffer
+                .add(offset)
+                .write_volatile(screen_character);
+        }
+    }
+
+    fn read_character(&self, x: usize, y: usize) -> ScreenChar {
+        let offset = x + (y * BUFFER_WIDTH);
+        unsafe { self.frame_buffer.add(offset).read_volatile() }
     }
 }
 

@@ -12,9 +12,23 @@ mod vga_buffer;
 pub extern "C" fn rust_main() {
     init();
 
+    x86_64::instructions::interrupts::int3();
+
     use x86_64::registers::control::Cr3;
 
     let (level_4_page_table, _) = Cr3::read();
+
+    println!();
+    println!("----------------------------------------");
+    println!();
+
+    let a = core::f64::consts::PI;
+    println!("{} + {} = {}", a, a, a + a);
+
+    println!();
+    println!("----------------------------------------");
+    println!();
+
     println!(
         "Level 4 page table at: {:?}",
         level_4_page_table.start_address()

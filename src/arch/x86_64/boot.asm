@@ -154,6 +154,7 @@ enable_paging:
 
 section .bss
 align 4096
+
 p4_table:
           resb PAGE_SIZE
 p3_table:
