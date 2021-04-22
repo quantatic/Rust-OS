@@ -6,6 +6,7 @@ RUN apt-get update -y && \
 		gcc \
 		grub2 \
 		nasm \
+		qemu-system \
 		xorriso
 
 RUN rustup default nightly
@@ -15,4 +16,5 @@ RUN cargo install xargo
 WORKDIR /build
 COPY . /build
 
-RUN make iso
+RUN make clean && \
+	make iso
